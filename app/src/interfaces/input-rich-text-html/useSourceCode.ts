@@ -15,7 +15,7 @@ type UsableSourceCode = {
 	sourceCodeButton: SourceCodeButton;
 };
 
-export default function useSourceCode(editor: Ref<any>): UsableSourceCode {
+export default function useSourceCode(editor: Ref<any>, isEditorDirty: Ref<boolean>): UsableSourceCode {
 	const codeDrawerOpen = ref(false);
 	const code = ref<string>();
 
@@ -39,6 +39,7 @@ export default function useSourceCode(editor: Ref<any>): UsableSourceCode {
 	}
 
 	function saveCode() {
+		isEditorDirty.value = true;
 		editor.value.setContent(code.value);
 		editor.value.undoManager.add();
 		closeCodeDrawer();

@@ -23,7 +23,7 @@ type UsableLink = {
 	linkButton: LinkButton;
 };
 
-export default function useLink(editor: Ref<any>): UsableLink {
+export default function useLink(editor: Ref<any>, isEditorDirty: Ref<boolean>): UsableLink {
 	const linkDrawerOpen = ref(false);
 	const defaultLinkSelection = {
 		url: null,

@@ -1,4 +1,4 @@
-import { getToken } from '@/api';
+import { addTokenToURL } from '@/api';
 import { i18n } from '@/lang';
 import { addQueryToPath } from '@/utils/add-query-to-path';
 import { getPublicURL } from '@/utils/get-root-path';
@@ -28,7 +28,11 @@ type UsableImage = {
 	imageButton: ImageButton;
 };
 
-export default function useImage(editor: Ref<any>, imageToken: Ref<string | undefined>): UsableImage {
+export default function useImage(
+	editor: Ref<any>,
+	isEditorDirty: Ref<boolean>,
+	imageToken: Ref<string | undefined>
+): UsableImage {
 	const imageDrawerOpen = ref(false);
 	const imageSelection = ref<ImageSelection | null>(null);
 
@@ -59,7 +63,7 @@ export default function useImage(editor: Ref<any>, imageToken: Ref<string | unde
 					alt,
 					width,
 					height,
-					previewUrl: replaceUrlAccessToken(imageUrl, imageToken.value ?? getToken()),
+					previewUrl: imageUrl,
 				};
 			} else {
 				imageSelection.value = null;
@@ -86,14 +90,14 @@ export default function useImage(editor: Ref<any>, imageToken: Ref<string | unde
 	}
 
 	function onImageSelect(image: Record<string, any>) {
-		const assetUrl = getPublicURL() + 'assets/' + image.id;
+		const imageUrl = addTokenToURL(getPublicURL() + 'assets/' + image.id, imageToken.value);
 
 		imageSelection.value = {
-			imageUrl: replaceUrlAccessToken(assetUrl, imageToken.value),
+			imageUrl,
 			alt: image.title,
 			width: image.width,
 			height: image.height,
-			previewUrl: replaceUrlAccessToken(assetUrl, imageToken.value ?? getToken()),
+			previewUrl: imageUrl,
 		};
 	}
 
@@ -105,31 +109,9 @@ export default function useImage(editor: Ref<any>, imageToken: Ref<string | unde
 			...(img.height ? { height: img.height.toString() } : {}),
 		});
 		const imageHtml = `<img src="${resizedImageUrl}" alt="${img.alt}" />`;
+		isEditorDirty.value = true;
 		editor.value.selection.setContent(imageHtml);
 		editor.value.undoManager.add();
 		closeImageDrawer();
-	}
-
-	function replaceUrlAccessToken(url: string, token: string | null | undefined): string {
-		// Only process assets URL
-		if (!url.includes(getPublicURL() + 'assets/')) {
-			return url;
-		}
-		try {
-			const parsedUrl = new URL(url);
-			const params = new URLSearchParams(parsedUrl.search);
-
-			if (!token) {
-				params.delete('access_token');
-			} else {
-				params.set('access_token', token);
-			}
-
-			return Array.from(params).length > 0
-				? `${parsedUrl.origin}${parsedUrl.pathname}?${params.toString()}`
-				: `${parsedUrl.origin}${parsedUrl.pathname}`;
-		} catch {
-			return url;
-		}
 	}
 }

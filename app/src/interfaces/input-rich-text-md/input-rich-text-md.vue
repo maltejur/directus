@@ -204,6 +204,8 @@ import 'codemirror/addon/display/placeholder.js';
 
 import { applyEdit, CustomSyntax, Alteration } from './edits';
 import { getPublicURL } from '@/utils/get-root-path';
+import { addTokenToURL } from '@/api';
+import escapeStringRegexp from 'escape-string-regexp';
 import useShortcut from '@/composables/use-shortcut';
 import translateShortcut from '@/utils/translate-shortcut';
 import { percentage } from '@/utils/percentage';
@@ -336,7 +338,20 @@ export default defineComponent({
 		});
 
 		const markdownString = computed(() => {
-			return props.value || '';
+			let mdString = props.value || '';
+
+			if (!props.imageToken) {
+				const baseUrl = getPublicURL() + 'assets/';
+				const regex = new RegExp(`\\]\\((${escapeStringRegexp(baseUrl)}[^\\s\\)]*)`, 'gm');
+
+				const images = Array.from(mdString.matchAll(regex));
+
+				for (const image of images) {
+					mdString = mdString.replace(image[1], addTokenToURL(image[1]));
+				}
+			}
+
+			return mdString;
 		});
 
 		const table = reactive({
@@ -385,7 +400,7 @@ export default defineComponent({
 				url += '?access_token=' + props.imageToken;
 			}
 
-			codemirror.replaceSelection(`![${codemirror.getSelection()}](${url})`);
+			codemirror.replaceSelection(`![](${url})`);
 
 			imageDialogOpen.value = false;
 		}
